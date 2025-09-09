@@ -1,0 +1,44 @@
+name: "CodeQL Analysis"
+
+on:
+  push:
+    branches: [ "main" ]   # adjust if your default branch is different
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 0 * * 0'   # weekly scan
+
+jobs:
+  analyze:
+    name: Analyze Code (VB.NET / ASP.NET)
+    runs-on: windows-latest   # must use Windows for .NET Framework
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'csharp' ]   # covers VB.NET
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Restore NuGet packages
+      run: nuget restore SampleConsApp/SampleConsApp.sln
+
+    - name: Build solution
+      run: msbuild SampleConsApp/SampleConsApp.sln /p:Configuration=Debug
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
